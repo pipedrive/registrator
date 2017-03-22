@@ -201,7 +201,8 @@ func (b *Bridge) add(containerId string, quiet bool) {
 	ports := make(map[string]ServicePort)
 
 	// Extract configured host port mappings, relevant when using --net=host
-	for port, published := range container.HostConfig.PortBindings {
+	for port, _ := range container.Config.ExposedPorts {
+		published := []dockerapi.PortBinding{ {"0.0.0.0", port.Port()}, }
 		ports[string(port)] = servicePort(container, port, published)
 	}
 
@@ -215,14 +216,20 @@ func (b *Bridge) add(containerId string, quiet bool) {
 		return
 	}
 
-	for _, port := range ports {
+	servicePorts := make(map[string]ServicePort)
+	for key, port := range ports {
 		if b.config.Internal != true && port.HostPort == "" {
 			if !quiet {
 				log.Println("ignored:", container.ID[:12], "port", port.ExposedPort, "not published on host")
 			}
 			continue
 		}
-		service := b.newService(port, len(ports) > 1)
+		servicePorts[key] = port
+	}
+
+	isGroup := len(servicePorts) > 1
+	for _, port := range servicePorts {
+		service := b.newService(port, isGroup)
 		if service == nil {
 			if !quiet {
 				log.Println("ignored:", container.ID[:12], "service on port", port.ExposedPort)
@@ -242,9 +249,6 @@ func (b *Bridge) add(containerId string, quiet bool) {
 func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 	container := port.container
 	defaultName := strings.Split(path.Base(container.Config.Image), ":")[0]
-	if isgroup {
-		defaultName = defaultName + "-" + port.ExposedPort
-	}
 
 	// not sure about this logic. kind of want to remove it.
 	hostname := Hostname
@@ -262,7 +266,7 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 		port.HostIP = b.config.HostIp
 	}
 
-	metadata := serviceMetaData(container.Config, port.ExposedPort)
+	metadata, metadataFromPort := serviceMetaData(container.Config, port.ExposedPort)
 
 	ignore := mapDefault(metadata, "ignore", "")
 	if ignore != "" {
@@ -273,7 +277,11 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 	service.Origin = port
 	service.ID = hostname + ":" + container.Name[1:] + ":" + port.ExposedPort
 	service.Name = mapDefault(metadata, "name", defaultName)
+	if isgroup && !metadataFromPort["name"] {
+		service.Name += "-" + port.ExposedPort
+	}
 	var p int
+
 	if b.config.Internal == true {
 		service.IP = port.ExposedIP
 		p, _ = strconv.Atoi(port.ExposedPort)
