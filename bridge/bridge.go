@@ -56,6 +56,10 @@ func (b *Bridge) Add(containerId string) {
 	b.add(containerId, false)
 }
 
+func (b *Bridge) SetupTTLHealthCheck(containerId string, ttl int, checkStatus string) {
+	b.setupTtlHealthCheck(containerId, ttl, checkStatus)
+}
+
 func (b *Bridge) Remove(containerId string) {
 	b.remove(containerId, true)
 }
@@ -149,7 +153,7 @@ func (b *Bridge) Sync(quiet bool) {
 			return
 		}
 
-	Outer:
+		Outer:
 		for _, extService := range extServices {
 			matches := serviceIDPattern.FindStringSubmatch(extService.ID)
 			if len(matches) != 3 {
@@ -293,7 +297,7 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 				service.IP = containerIp
 			}
 			log.Println("using container IP " + service.IP + " from label '" +
-				b.config.UseIpFromLabel  + "'")
+				b.config.UseIpFromLabel + "'")
 		} else {
 			log.Println("Label '" + b.config.UseIpFromLabel +
 				"' not found in container configuration")
@@ -337,6 +341,14 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 	service.TTL = b.config.RefreshTtl
 
 	return service
+}
+
+func (b *Bridge) setupTtlHealthCheck(containerId string, ttl int, checkStatus string) {
+	b.Lock()
+	defer b.Unlock()
+	for _, service := range b.services[containerId] {
+		log.Printf("Setting up TTL health check with \"%s\" status for %d seconds for service %s running inside %s", checkStatus, ttl, service.ID, containerId[:12])
+	}
 }
 
 func (b *Bridge) remove(containerId string, deregister bool) {
@@ -391,7 +403,7 @@ func (b *Bridge) shouldRemove(containerId string) bool {
 		return false
 	case container.State.ExitCode == 0:
 		return true
-	case container.State.ExitCode&dockerSignaledBit == dockerSignaledBit:
+	case container.State.ExitCode & dockerSignaledBit == dockerSignaledBit:
 		return true
 	}
 	return false

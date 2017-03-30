@@ -2,6 +2,11 @@ NAME=registrator
 VERSION=$(shell cat VERSION)
 DEV_RUN_OPTS ?= consul:
 
+dev-local:
+	docker-compose down
+	go build -ldflags "-extldflags '-static'" -o registrator
+	docker-compose up --build -d
+
 dev:
 	docker build -f Dockerfile.dev -t $(NAME):dev .
 	docker run --rm \
