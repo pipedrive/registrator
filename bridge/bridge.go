@@ -57,9 +57,9 @@ func (b *Bridge) Add(containerId string) {
 	b.add(containerId, false)
 }
 
-func (b *Bridge) SetupSigtermBehavior(behavior string, message *dockerapi.APIEvents, ttl int, checkStatus string) {
+func (b *Bridge) SetupSigtermBehavior(behavior string, msg *dockerapi.APIEvents, ttl int, checkStatus string) {
 	signal := -1
-	i, err := strconv.Atoi(message.Actor.Attributes["signal"])
+	i, err := strconv.Atoi(msg.Actor.Attributes["signal"])
 	if err == nil {
 		signal = i
 	}
@@ -68,13 +68,11 @@ func (b *Bridge) SetupSigtermBehavior(behavior string, message *dockerapi.APIEve
 		return
 	}
 
-	containerId := message.ID
-
 	switch behavior {
 	case "deregister":
-		b.remove(containerId, true)
+		b.remove(msg.ID, true)
 	case "ttl-health-check":
-		b.setupTtlHealthCheck(containerId, &TtlHealthCheck{ttl, checkStatus})
+		b.setupTtlHealthCheck(msg.ID, &TtlHealthCheck{ttl, checkStatus})
 	}
 }
 

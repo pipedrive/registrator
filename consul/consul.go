@@ -136,9 +136,7 @@ func (r *ConsulAdapter) SetupHealthCheck(service *bridge.Service, healthCheck *b
 	ttlCheck.Name = "Gracefully shutting down " + service.ID
 	ttlCheck.Notes = "TTL check to wait until service " + service.ID + " will gracefully shutdown"
 	ttlCheck.ServiceID = service.ID
-	agentServiceCheck := new(consulapi.AgentServiceCheck)
-	agentServiceCheck.TTL = strconv.Itoa(healthCheck.TTL) + "s"
-	ttlCheck.AgentServiceCheck = *agentServiceCheck
+	ttlCheck.AgentServiceCheck = consulapi.AgentServiceCheck{TTL: strconv.Itoa(healthCheck.TTL) + "s"}
 	err := r.client.Agent().CheckRegister(ttlCheck)
 	if err != nil {
 		return err
