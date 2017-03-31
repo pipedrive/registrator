@@ -180,13 +180,7 @@ func main() {
 		case "start":
 			go b.Add(msg.ID)
 		case "kill":
-			switch *sigtermBehaviour {
-			case "deregister":
-				go b.RemoveOnExit(msg.ID)
-			case "ttl-health-check":
-				go b.SetupTTLHealthCheck(msg.ID, *ttlHealthCheckTTL, *ttlHealthCheckStatus)
-			default:
-			}
+			go b.SetupSigtermBehavior(*sigtermBehaviour, msg, *ttlHealthCheckTTL, *ttlHealthCheckStatus)
 		case "die":
 			go b.RemoveOnExit(msg.ID)
 		}

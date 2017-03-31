@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	dockerapi "github.com/fsouza/go-dockerclient"
+	"syscall"
 )
 
 var serviceIDPattern = regexp.MustCompile(`^(.+?):([a-zA-Z0-9][a-zA-Z0-9_.-]+):[0-9]+(?::udp)?$`)
@@ -56,8 +57,25 @@ func (b *Bridge) Add(containerId string) {
 	b.add(containerId, false)
 }
 
-func (b *Bridge) SetupTTLHealthCheck(containerId string, ttl int, checkStatus string) {
-	b.setupTtlHealthCheck(containerId, ttl, checkStatus)
+func (b *Bridge) SetupSigtermBehavior(behavior string, message *dockerapi.APIEvents, ttl int, checkStatus string) {
+	signal := -1
+	i, err := strconv.Atoi(message.Actor.Attributes["signal"])
+	if err == nil {
+		signal = i
+	}
+
+	if syscall.Signal(signal) != syscall.SIGTERM {
+		return
+	}
+
+	containerId := message.ID
+
+	switch behavior {
+	case "deregister":
+		b.remove(containerId, true)
+	case "ttl-health-check":
+		b.setupTtlHealthCheck(containerId, &TtlHealthCheck{ttl, checkStatus})
+	}
 }
 
 func (b *Bridge) Remove(containerId string) {
@@ -153,7 +171,7 @@ func (b *Bridge) Sync(quiet bool) {
 			return
 		}
 
-		Outer:
+	Outer:
 		for _, extService := range extServices {
 			matches := serviceIDPattern.FindStringSubmatch(extService.ID)
 			if len(matches) != 3 {
@@ -322,11 +340,11 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 
 	if port.PortType == "udp" {
 		service.Tags = combineTags(
-			mapDefault(metadata, "tags", ""), b.config.ForceTags, "udp", hostname + "-" + container.Config.Hostname)
+			mapDefault(metadata, "tags", ""), b.config.ForceTags, "udp", hostname+"-"+container.Config.Hostname)
 		service.ID = service.ID + ":udp"
 	} else {
 		service.Tags = combineTags(
-			mapDefault(metadata, "tags", ""), b.config.ForceTags, hostname + "-" + container.Config.Hostname)
+			mapDefault(metadata, "tags", ""), b.config.ForceTags, hostname+"-"+container.Config.Hostname)
 	}
 
 	id := mapDefault(metadata, "id", "")
@@ -343,12 +361,20 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 	return service
 }
 
-func (b *Bridge) setupTtlHealthCheck(containerId string, ttl int, checkStatus string) {
+func (b *Bridge) setupTtlHealthCheck(containerId string, ttlHealthCheck *TtlHealthCheck) {
 	b.Lock()
 	defer b.Unlock()
-	for _, service := range b.services[containerId] {
-		log.Printf("Setting up TTL health check with \"%s\" status for %d seconds for service %s running inside %s", checkStatus, ttl, service.ID, containerId[:12])
+	setupAllHealthChecks := func(services []*Service) {
+		for _, service := range services {
+			err := b.registry.SetupHealthCheck(service, ttlHealthCheck)
+			if err != nil {
+				log.Println("Health check setup failed:", service.ID, err)
+				continue
+			}
+			log.Printf("health-check-setup: %s %s status \"%s\" for %d seconds", containerId[:12], service.ID, ttlHealthCheck.CheckStatus, ttlHealthCheck.TTL)
+		}
 	}
+	setupAllHealthChecks(b.services[containerId])
 }
 
 func (b *Bridge) remove(containerId string, deregister bool) {
@@ -403,7 +429,7 @@ func (b *Bridge) shouldRemove(containerId string) bool {
 		return false
 	case container.State.ExitCode == 0:
 		return true
-	case container.State.ExitCode & dockerSignaledBit == dockerSignaledBit:
+	case container.State.ExitCode&dockerSignaledBit == dockerSignaledBit:
 		return true
 	}
 	return false
