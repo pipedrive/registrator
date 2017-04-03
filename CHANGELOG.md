@@ -19,11 +19,11 @@ All notable changes to this project will be documented in this file.
 Now its possible to set behavior once container receives SIGTERM by using `sigterm-behavior` run parameter with:
 - `none` *default*
 - `deregister`
-- `ttl-health-check`
+- `register-health-check`
 
-`ttl-health-check` can be tuned additionaly with the following parameters:
-- `ttl-health-check-ttl` (defaults to 60) - TTL for health check to be set up
-- `ttl-health-check-status` (defaults to *warning*) - status for check to be set up
+`register-health-check` can be tuned additionaly with the following parameters:
+- `sigterm-health-check-ttl` (defaults to 60) - TTL for health check to be set up
+- `sigterm-health-check-status` (defaults to *warning*) - status for check to be set up
 
 
 ### Removed

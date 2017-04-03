@@ -71,7 +71,7 @@ func (b *Bridge) SetupSigtermBehavior(behavior string, msg *dockerapi.APIEvents,
 	switch behavior {
 	case "deregister":
 		b.remove(msg.ID, true)
-	case "ttl-health-check":
+	case "register-health-check":
 		b.setupTtlHealthCheck(msg.ID, &TtlHealthCheck{ttl, checkStatus})
 	}
 }

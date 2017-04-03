@@ -29,9 +29,9 @@ var deregister = flag.String("deregister", "always", "Deregister exited services
 var retryAttempts = flag.Int("retry-attempts", 0, "Max retry attempts to establish a connection with the backend. Use -1 for infinite retries")
 var retryInterval = flag.Int("retry-interval", 2000, "Interval (in millisecond) between retry-attempts.")
 var cleanup = flag.Bool("cleanup", false, "Remove dangling services")
-var sigtermBehaviour = flag.String("sigterm-behavior", "none", "Behavior when SIGTERM recieved by service - \"none\", \"deregister\" or \"ttl-health-check\".")
-var ttlHealthCheckTTL = flag.Int("ttl-health-check-ttl", 60, "TTL-type health-check TTL (in case sigterm-behavior set to \"ttl-health-check\").")
-var ttlHealthCheckStatus = flag.String("ttl-health-check-status", "warning", "TTL-type health-check TTL (in case sigterm-behavior set to \"ttl-health-check\").")
+var sigtermBehaviour = flag.String("sigterm-behavior", "none", "Behavior when SIGTERM recieved by service - \"none\", \"deregister\" or \"register-health-check\".")
+var ttlHealthCheckTTL = flag.Int("sigterm-health-check-ttl", 60, "TTL-type health-check TTL (in case sigterm-behavior set to \"register-health-check\").")
+var ttlHealthCheckStatus = flag.String("sigterm-health-check-status", "warning", "TTL-type health-check TTL (in case sigterm-behavior set to \"register-health-check\").")
 
 func getopt(name, def string) string {
 	if env := os.Getenv(name); env != "" {

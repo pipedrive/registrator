@@ -7,7 +7,7 @@ services:
     restart: always
     network_mode: host
     hostname: ${HOSTNAME}
-    command: "-ip 192.168.46.100 -sigterm-behavior ttl-health-check -cleanup=true -retry-attempts -1 consul://172.17.0.1:8500"
+    command: "-ip 192.168.46.100 -sigterm-behavior register-health-check -cleanup=true -retry-attempts -1 consul://172.17.0.1:8500"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
     logging:
