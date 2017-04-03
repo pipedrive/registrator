@@ -24,11 +24,9 @@ build-scratch:
 	docker rmi $(DOCKER_TAG)_interim
 
 tag-beta:
-	docker tag $(DOCKER_TAG) $(DOCKER_TAG)_beta
 	docker tag $(DOCKER_TAG) $(DOCKER_ORG):beta
 
 push-beta:
-	docker push $(DOCKER_TAG)_beta
 	docker push $(DOCKER_ORG):beta
 
 push-release:
