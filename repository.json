@@ -1,0 +1,6 @@
+{
+  "name": "registrator",
+  "description": "Service registry bridge for Docker",
+  "owner": "Pipedrive",
+  "type": "service"
+}
