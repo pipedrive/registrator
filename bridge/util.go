@@ -114,8 +114,8 @@ func servicePort(container *dockerapi.Container, port dockerapi.Port, published 
 	// Nir: support docker NetworkSettings
 	eip = container.NetworkSettings.IPAddress
 	if eip == "" {
-		for network_type, network := range container.NetworkSettings.Networks {
-			if network_type != "ingress" {
+		for network_name, network := range container.NetworkSettings.Networks {
+			if network_name != "ingress" {
 				eip = network.IPAddress
 			}
 		}
