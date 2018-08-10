@@ -233,7 +233,7 @@ func (b *Bridge) add(containerId string, quiet bool) {
 
 	// Extract configured host port mappings, relevant when using --net=host
 	for port, _ := range container.Config.ExposedPorts {
-		published := []dockerapi.PortBinding{ {"0.0.0.0", port.Port()}, }
+		published := []dockerapi.PortBinding{{"0.0.0.0", port.Port()},}
 		ports[string(port)] = servicePort(container, port, published)
 	}
 
@@ -356,13 +356,15 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 		}
 	}
 
+	service.Tags = combineTags(
+		mapDefault(metadata, "tags", ""),
+		b.config.ForceTags,
+		hostname+"-"+container.Config.Hostname,
+		EvaluatePatternedTags(&b.config.PatternedTags, container))
+
 	if port.PortType == "udp" {
-		service.Tags = combineTags(
-			mapDefault(metadata, "tags", ""), b.config.ForceTags, "udp", hostname+"-"+container.Config.Hostname)
+		service.Tags = append(service.Tags, "udp")
 		service.ID = service.ID + ":udp"
-	} else {
-		service.Tags = combineTags(
-			mapDefault(metadata, "tags", ""), b.config.ForceTags, hostname+"-"+container.Config.Hostname)
 	}
 
 	id := mapDefault(metadata, "id", "")

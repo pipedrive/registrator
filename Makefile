@@ -17,10 +17,7 @@ dev:
 		$(NAME):dev /bin/registrator $(DEV_RUN_OPTS)
 
 build-scratch:
-	docker build -t $(DOCKER_TAG)_interim .
-	docker run --rm -v $(PWD):/opt --entrypoint=cp $(DOCKER_TAG)_interim /bin/registrator /opt
 	docker build -f Dockerfile.release -t $(DOCKER_TAG) .
-	docker rmi $(DOCKER_TAG)_interim
 
 tag-beta:
 	docker tag $(DOCKER_TAG) $(DOCKER_ORG):beta

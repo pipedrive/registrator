@@ -11,6 +11,10 @@ func (f *fakeFactory) New(uri *url.URL) RegistryAdapter {
 
 type fakeAdapter struct{}
 
+func (f *fakeAdapter) SetupHealthCheck(service *Service, healthCheck *TtlHealthCheck) error {
+	return nil
+}
+
 func (f *fakeAdapter) Ping() error {
 	return nil
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/cenkalti/backoff"
 	dockerapi "github.com/fsouza/go-dockerclient"
 	"bytes"
+	"text/template"
+	"log"
 )
 
 func retry(fn func() error) error {
@@ -186,4 +188,27 @@ func (f *ContainersFilters) WithContainerId(containerId string) ContainersFilter
 	filtersCopy["id"] = []string{containerId}
 
 	return filtersCopy
+}
+
+func EvaluatePatternedTags(s *string, container *dockerapi.Container) string {
+	if container == nil || s == nil || *s == "" {
+		return *s
+	}
+
+	tmpl := template.New("patterned-tags")
+	tmpl, err := tmpl.Parse(*s)
+
+	if err != nil {
+		log.Printf("patterned tags: Unable to parse %s template", s)
+		return *s
+	}
+
+	tmplVal := bytes.NewBufferString("")
+
+	if err = tmpl.Execute(tmplVal, container); err != nil {
+		log.Printf("patterned tags: Unable to evaluate %s template against container", s)
+		return *s
+	}
+
+	return tmplVal.String()
 }

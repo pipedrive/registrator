@@ -32,6 +32,7 @@ type Config struct {
 	DeregisterCheck string
 	Cleanup         bool
 	ContainersFilters ContainersFilters
+	PatternedTags string
 }
 
 type Service struct {
