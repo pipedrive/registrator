@@ -19,30 +19,30 @@ func buildContainerDetails() *dockerapi.Container {
 	}
 }
 
-func TestEvaluatePatternedTags(t *testing.T) {
+func TestEvaluateTemplateTags(t *testing.T) {
 	s := "a-{{.Config.Status}}"
-	result := EvaluatePatternedTags(&s, nil)
+	result := EvaluateTemplateTags(&s, nil)
 
 	assert.Equal(t, result, "a-{{.Config.Status}}")
 }
 
-func TestEvaluatePatternedTags_invalidTemplate(t *testing.T) {
+func TestEvaluateTemplateTags_invalidTemplate(t *testing.T) {
 	s := "a-{{.Config.Status}"
-	result := EvaluatePatternedTags(&s, buildContainerDetails())
+	result := EvaluateTemplateTags(&s, buildContainerDetails())
 
 	assert.Equal(t, result, "a-{{.Config.Status}")
 }
 
-func TestEvaluatePatternedTags_validTemplate(t *testing.T) {
+func TestEvaluateTemplateTags_validTemplate(t *testing.T) {
 	s := "a-{{.Config.Hostname}}"
-	result := EvaluatePatternedTags(&s, buildContainerDetails())
+	result := EvaluateTemplateTags(&s, buildContainerDetails())
 
 	assert.Equal(t, result, "a-testbox-1")
 }
 
-func TestEvaluatePatternedTags_validTemplateMultipletags(t *testing.T) {
+func TestEvaluateTemplateTags_validTemplateMultipletags(t *testing.T) {
 	s := "a-{{.Config.Hostname}},b-{{.Config.User}},c-{{.Image}}"
-	result := EvaluatePatternedTags(&s, buildContainerDetails())
+	result := EvaluateTemplateTags(&s, buildContainerDetails())
 
 	assert.Equal(t, result, "a-testbox-1,b-testuser,c-configs/test")
 }

@@ -33,7 +33,7 @@ var sigtermBehaviour = flag.String("sigterm-behavior", "none", "Behavior when SI
 var ttlHealthCheckTTL = flag.Int("sigterm-health-check-ttl", 60, "TTL-type health-check TTL (in case sigterm-behavior set to \"register-health-check\").")
 var ttlHealthCheckStatus = flag.String("sigterm-health-check-status", "warning", "TTL-type health-check TTL (in case sigterm-behavior set to \"register-health-check\").")
 var containersFilters = make(bridge.ContainersFilters)
-var patternedTags = flag.String("patterned-tags", "", "Patterned tags, coma separated. example: \"smth-{{.Config.etc}},what-{{.Config.another}}\" where pattern is standard go templates and root element is container as described in github.com/fsouza/go-dockerclient")
+var templateTags = flag.String("template-tags", "", "Patterned tags, coma separated. example: \"smth-{{.Config.etc}},what-{{.Config.another}}\" where pattern is standard go templates and root element is container as described in github.com/fsouza/go-dockerclient")
 
 func init() {
 	flag.Var(&containersFilters, "filter-containers", "Filter container to register. Based on docker-api filters (as in API /containers/json)")
@@ -123,7 +123,7 @@ func main() {
 		DeregisterCheck:   *deregister,
 		Cleanup:           *cleanup,
 		ContainersFilters: containersFilters,
-		PatternedTags:     *patternedTags,
+		TemplateTags:      *templateTags,
 	})
 
 	assert(err)

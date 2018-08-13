@@ -190,23 +190,23 @@ func (f *ContainersFilters) WithContainerId(containerId string) ContainersFilter
 	return filtersCopy
 }
 
-func EvaluatePatternedTags(s *string, container *dockerapi.Container) string {
+func EvaluateTemplateTags(s *string, container *dockerapi.Container) string {
 	if container == nil || s == nil || *s == "" {
 		return *s
 	}
 
-	tmpl := template.New("patterned-tags")
+	tmpl := template.New("template-tags")
 	tmpl, err := tmpl.Parse(*s)
 
 	if err != nil {
-		log.Printf("patterned tags: Unable to parse %s template", s)
+		log.Printf("template tags: Unable to parse %s template", s)
 		return *s
 	}
 
 	tmplVal := bytes.NewBufferString("")
 
 	if err = tmpl.Execute(tmplVal, container); err != nil {
-		log.Printf("patterned tags: Unable to evaluate %s template against container", s)
+		log.Printf("template tags: Unable to evaluate %s template against container", s)
 		return *s
 	}
 

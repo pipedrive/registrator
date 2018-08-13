@@ -360,7 +360,7 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 		mapDefault(metadata, "tags", ""),
 		b.config.ForceTags,
 		hostname+"-"+container.Config.Hostname,
-		EvaluatePatternedTags(&b.config.PatternedTags, container))
+		EvaluateTemplateTags(&b.config.TemplateTags, container))
 
 	if port.PortType == "udp" {
 		service.Tags = append(service.Tags, "udp")

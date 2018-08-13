@@ -38,7 +38,7 @@ Option                                  | Since | Description
 `-filter-containers <docker-filtering>` |  v7.6 | Filter containers to register. Based on docker-api filters (as in API /containers/json)
 `-internal`                             |       | Use exposed ports instead of published ports
 `-ip <ip address>`                      |       | Force IP address used for registering services
-`-patterned-tags <tags>`                | v7.7  | Patterned tags, coma separated. example: \"smth-{{.Config.etc}},what-{{.Config.another}}\" where pattern is standard go templates and root element is container as described in [go-dockerclient](github.com/fsouza/go-dockerclient)
+`-template-tags <tags>`                | v7.7  | Patterned tags, coma separated. example: \"smth-{{.Config.etc}},what-{{.Config.another}}\" where pattern is standard go templates and root element is container as described in [go-dockerclient](github.com/fsouza/go-dockerclient)
 `-resync <seconds>`                     | v6    | Frequency all services are resynchronized. Default: 0, never
 `-retry-attempts <number>`              | v7    | Max retry attempts to establish a connection with the backend
 `-retry-interval <milliseconds>`        | v7    | Interval (in millisecond) between retry-attempts
