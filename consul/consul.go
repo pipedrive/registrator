@@ -2,7 +2,7 @@ package consul
 
 import (
 	"fmt"
-	"log"
+	log "github.com/pipedrive/registrator/logger"
 	"net/url"
 	"strings"
 	"os"
@@ -84,6 +84,7 @@ func (r *ConsulAdapter) Register(service *bridge.Service) error {
 	registration.Tags = service.Tags
 	registration.Address = service.IP
 	registration.Check = r.buildCheck(service)
+	log.Debugf("Publishing service to Consul %+v with check %+v", registration, *registration.Check)
 	return r.client.Agent().ServiceRegister(registration)
 }
 
