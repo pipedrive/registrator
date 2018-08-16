@@ -84,7 +84,10 @@ func (r *ConsulAdapter) Register(service *bridge.Service) error {
 	registration.Tags = service.Tags
 	registration.Address = service.IP
 	registration.Check = r.buildCheck(service)
-	log.Debugf("Publishing service to Consul %+v with check %+v", registration, *registration.Check)
+	log.Debugf("Publishing service to Consul %+v", registration)
+	if registration.Check != nil {
+		log.Debugf("with check %+v", *registration.Check)
+	}
 	return r.client.Agent().ServiceRegister(registration)
 }
 
