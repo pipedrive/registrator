@@ -89,12 +89,16 @@ func serviceMetaData(config *dockerapi.Config, port string) (map[string]string, 
 }
 
 func servicePort(container *dockerapi.Container, port dockerapi.Port, published []dockerapi.PortBinding) ServicePort {
-	log.Debugf("Building servicePort %s", container.ID[:12])
+	if log.IsVerbose() {
+		log.Debugf("Building servicePort %s", container.ID[:12])
+	}
 	var hp, hip, eip, nm string
 	if len(published) > 0 {
 		hp = published[0].HostPort
 		hip = published[0].HostIP
-		log.Debugf("Found Published Port for %s - \"%s:%s\"", container.ID[:12], hip, hp)
+		if log.IsVerbose() {
+			log.Debugf("Found Published Port for %s - \"%s:%s\"", container.ID[:12], hip, hp)
+		}
 	}
 	if hip == "" {
 		hip = "0.0.0.0"
@@ -104,7 +108,9 @@ func servicePort(container *dockerapi.Container, port dockerapi.Port, published 
 	//detect if container use overlay network, than set HostIP into NetworkSettings.Network[string].IPAddress
 	//better to use registrator with -internal flag
 	nm = container.HostConfig.NetworkMode
-	log.Debugf("Network mode for %s is: \"%s\"", container.ID[:12], nm)
+	if log.IsVerbose() {
+		log.Debugf("Network mode for %s is: \"%s\"", container.ID[:12], nm)
+	}
 	if nm != "bridge" && nm != "default" && nm != "host" {
 		hip = container.NetworkSettings.Networks[nm].IPAddress
 	}
@@ -115,7 +121,9 @@ func servicePort(container *dockerapi.Container, port dockerapi.Port, published 
 		for network_name, network := range container.NetworkSettings.Networks {
 			if network_name != "ingress" {
 				eip = network.IPAddress
-				log.Debugf("Container %s exposed IP is: \"%s\"", container.ID[:12], eip)
+				if log.IsVerbose() {
+					log.Debugf("Container %s exposed IP is: \"%s\"", container.ID[:12], eip)
+				}
 			}
 		}
 	}

@@ -191,7 +191,9 @@ func (b *Bridge) Sync(quiet bool) {
 
 func (b *Bridge) add(containerId string, quiet bool) {
 	if d := b.deadContainers[containerId]; d != nil {
-		log.Debugf("Found dead container %s", containerId[:12])
+		if log.IsVerbose() {
+			log.Debugf("Found dead container %s", containerId[:12])
+		}
 		b.services[containerId] = d.Services
 		delete(b.deadContainers, containerId)
 	}
@@ -204,7 +206,9 @@ func (b *Bridge) add(containerId string, quiet bool) {
 
 	if filtersLength := len(b.config.ContainersFilters); filtersLength > 0 {
 		filters := b.config.ContainersFilters.WithContainerId(containerId)
-		log.Debugf("Applying filters for container %s - %s", containerId[:12], filters)
+		if log.IsVerbose() {
+			log.Debugf("Applying filters for container %s - %s", containerId[:12], filters)
+		}
 		containersList, err := b.docker.ListContainers(dockerapi.ListContainersOptions{Filters: filters})
 		if err == nil && len(containersList) == 0 {
 			log.Printf("Ignoring container: %s as it doesn't match \"%s\" filters ", containerId[:12], b.config.ContainersFilters.String())
@@ -224,24 +228,32 @@ func (b *Bridge) add(containerId string, quiet bool) {
 	// Extract configured host port mappings, relevant when using --net=host
 	for port, _ := range container.Config.ExposedPorts {
 		published := []dockerapi.PortBinding{{"0.0.0.0", port.Port()},}
-		log.Debugf("Found ExposedPort for %s - \"%s\"", container.ID[:12], port.Port())
-		log.Separator()
+		if log.IsVerbose() {
+			log.Debugf("Found ExposedPort for %s - \"%s\"", container.ID[:12], port.Port())
+			log.Separator()
+		}
 		ports[string(port)] = servicePort(container, port, published)
-		log.Separator()
-		log.Debugf("Adding ExposedPort for %s - \"%+v\"", container.ID[:12], ports[string(port)])
-		log.Separator()
-		log.Separator()
+		if log.IsVerbose() {
+			log.Separator()
+			log.Debugf("Adding ExposedPort for %s - \"%+v\"", container.ID[:12], ports[string(port)])
+			log.Separator()
+			log.Separator()
+		}
 	}
 
 	// Extract runtime port mappings, relevant when using --net=bridge
 	for port, published := range container.NetworkSettings.Ports {
-		log.Debugf("Found Bridged port for %s - \"%s\" with PortBindings \"%+v\"", container.ID[:12], port.Port(), published)
-		log.Separator()
+		if log.IsVerbose() {
+			log.Debugf("Found Bridged port for %s - \"%s\" with PortBindings \"%+v\"", container.ID[:12], port.Port(), published)
+			log.Separator()
+		}
 		ports[string(port)] = servicePort(container, port, published)
-		log.Separator()
-		log.Debugf("Adding ports for %s from bridge network %+v", container.ID[:12], ports[string(port)])
-		log.Separator()
-		log.Separator()
+		if log.IsVerbose() {
+			log.Separator()
+			log.Debugf("Adding ports for %s from bridge network %+v", container.ID[:12], ports[string(port)])
+			log.Separator()
+			log.Separator()
+		}
 	}
 
 	if len(ports) == 0 && !quiet {
@@ -269,7 +281,9 @@ func (b *Bridge) add(containerId string, quiet bool) {
 			}
 			continue
 		}
-		log.Debugf("Registering service for %s: %+v", container.ID[:12], service)
+		if log.IsVerbose() {
+			log.Debugf("Registering service for %s: %+v", container.ID[:12], service)
+		}
 		err := b.registry.Register(service)
 		if err != nil {
 			log.Println("register failed:", service, err)
@@ -281,7 +295,9 @@ func (b *Bridge) add(containerId string, quiet bool) {
 }
 
 func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
-	log.Debugf("Preparing service information from %s for port %s", port.ContainerID[:12], port.ExposedPort)
+	if log.IsVerbose() {
+		log.Debugf("Preparing service information from %s for port %s", port.ContainerID[:12], port.ExposedPort)
+	}
 	container := port.container
 	defaultName := strings.Split(path.Base(container.Config.Image), ":")[0]
 
@@ -297,16 +313,24 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 		}
 	}
 
-	log.Debugf("Service %s host IP is %s:", port.ContainerID[:12], port.HostIP)
+	if log.IsVerbose() {
+		log.Debugf("Service %s host IP is %s:", port.ContainerID[:12], port.HostIP)
+	}
 
 	if b.config.HostIp != "" {
 		port.HostIP = b.config.HostIp
-		log.Debugf("Service %s forced IP to %s:", port.ContainerID[:12], b.config.HostIp)
+		if log.IsVerbose() {
+			log.Debugf("Service %s forced IP to %s:", port.ContainerID[:12], b.config.HostIp)
+		}
 	}
 
-	log.Debugf("Extracting meta data for %s for port %s", port.ContainerID[:12], port.ExposedPort)
+	if log.IsVerbose() {
+		log.Debugf("Extracting meta data for %s for port %s", port.ContainerID[:12], port.ExposedPort)
+	}
 	metadata, metadataFromPort := serviceMetaData(container.Config, port.ExposedPort)
-	log.Debugf("Extracted meta data for %s is:(general): %+v; port-specific: %+v", port.ContainerID[:12], metadata, metadataFromPort)
+	if log.IsVerbose() {
+		log.Debugf("Extracted meta data for %s is:(general): %+v; port-specific: %+v", port.ContainerID[:12], metadata, metadataFromPort)
+	}
 
 	ignore := mapDefault(metadata, "ignore", "")
 	if ignore != "" {
@@ -331,7 +355,9 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 		p, _ = strconv.Atoi(port.HostPort)
 	}
 	service.Port = p
-	log.Debugf("Service for %s exposed IP address us %s", port.ContainerID[:12], service.IP)
+	if log.IsVerbose() {
+		log.Debugf("Service for %s exposed IP address us %s", port.ContainerID[:12], service.IP)
+	}
 
 	if b.config.UseIpFromLabel != "" {
 		containerIp := container.Config.Labels[b.config.UseIpFromLabel]
@@ -395,7 +421,9 @@ func (b *Bridge) newService(port ServicePort, isgroup bool) *Service {
 func (b *Bridge) setupTtlHealthCheck(containerId string, ttlHealthCheck *TtlHealthCheck) {
 	b.Lock()
 	defer b.Unlock()
-	log.Debugf("Setting up TTL health check for %s", containerId[:12])
+	if log.IsVerbose() {
+		log.Debugf("Setting up TTL health check for %s", containerId[:12])
+	}
 	setupAllHealthChecks := func(services []*Service) {
 		for _, service := range services {
 			err := b.registry.SetupHealthCheck(service, ttlHealthCheck)
@@ -416,7 +444,9 @@ func (b *Bridge) remove(containerId string, deregister bool) {
 	b.Lock()
 	defer b.Unlock()
 
-	log.Debugf("Going to remove %s services", containerId[:12])
+	if log.IsVerbose() {
+		log.Debugf("Going to remove %s services", containerId[:12])
+	}
 
 	if deregister {
 		deregisterAll := func(services []*Service) {

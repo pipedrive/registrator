@@ -69,7 +69,9 @@ func main() {
 
 	flag.Parse()
 	log.SetVerbose(*verbose)
-	log.Debugf("Using advanced debug (verbose) %t", *verbose)
+	if log.IsVerbose() {
+		log.Debugf("Using advanced debug (verbose) %t", *verbose)
+	}
 
 	if flag.NArg() != 1 {
 		if flag.NArg() == 0 {
@@ -193,7 +195,9 @@ func main() {
 	// Process Docker events
 	for msg := range events {
 		signal := bridge.SignalFromEvent(msg)
-		log.Debugf("Got status update \"%s\" for %s. Signal: %d (%s): %+v", msg.Status, msg.ID[:12], signal, signal.String(), msg)
+		if log.IsVerbose() {
+			log.Debugf("Got status update \"%s\" for %s. Signal: %d (%s): %+v", msg.Status, msg.ID[:12], signal, signal.String(), msg)
+		}
 		switch msg.Status {
 		case "start":
 			go b.Add(msg.ID)

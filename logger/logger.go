@@ -14,6 +14,11 @@ func SetVerbose(verbose bool) {
 	isVerbose = verbose
 }
 
+// returns global isDebug
+func IsVerbose() bool {
+	return isVerbose
+}
+
 // This functions deal with debug level taking verbose into account
 
 // Print calls Output to print to the standard logger.
