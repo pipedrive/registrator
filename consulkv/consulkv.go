@@ -1,7 +1,7 @@
 package consul
 
 import (
-	"log"
+	log "github.com/pipedrive/registrator/logger"
 	"net"
 	"net/url"
 	"strconv"

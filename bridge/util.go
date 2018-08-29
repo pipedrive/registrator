@@ -7,6 +7,9 @@ import (
 	"github.com/cenkalti/backoff"
 	dockerapi "github.com/fsouza/go-dockerclient"
 	"bytes"
+	"text/template"
+	log "github.com/pipedrive/registrator/logger"
+	"syscall"
 )
 
 func retry(fn func() error) error {
@@ -58,7 +61,7 @@ func combineTags(tagParts ...string) []string {
 func serviceMetaData(config *dockerapi.Config, port string) (map[string]string, map[string]bool) {
 	meta := config.Env
 	for k, v := range config.Labels {
-		meta = append(meta, k + "=" + v)
+		meta = append(meta, k+"="+v)
 	}
 	metadata := make(map[string]string)
 	metadataFromPort := make(map[string]bool)
@@ -86,10 +89,16 @@ func serviceMetaData(config *dockerapi.Config, port string) (map[string]string, 
 }
 
 func servicePort(container *dockerapi.Container, port dockerapi.Port, published []dockerapi.PortBinding) ServicePort {
-	var hp, hip, ep, ept, eip, nm string
+	if log.IsVerbose() {
+		log.Debugf("Building servicePort %s", container.ID[:12])
+	}
+	var hp, hip, eip, nm string
 	if len(published) > 0 {
 		hp = published[0].HostPort
 		hip = published[0].HostIP
+		if log.IsVerbose() {
+			log.Debugf("Found Published Port for %s - \"%s:%s\"", container.ID[:12], hip, hp)
+		}
 	}
 	if hip == "" {
 		hip = "0.0.0.0"
@@ -99,32 +108,32 @@ func servicePort(container *dockerapi.Container, port dockerapi.Port, published 
 	//detect if container use overlay network, than set HostIP into NetworkSettings.Network[string].IPAddress
 	//better to use registrator with -internal flag
 	nm = container.HostConfig.NetworkMode
+	if log.IsVerbose() {
+		log.Debugf("Network mode for %s is: \"%s\"", container.ID[:12], nm)
+	}
 	if nm != "bridge" && nm != "default" && nm != "host" {
 		hip = container.NetworkSettings.Networks[nm].IPAddress
-	}
-
-	exposedPort := strings.Split(string(port), "/")
-	ep = exposedPort[0]
-	if len(exposedPort) == 2 {
-		ept = exposedPort[1]
-	} else {
-		ept = "tcp" // default
 	}
 
 	// Nir: support docker NetworkSettings
 	eip = container.NetworkSettings.IPAddress
 	if eip == "" {
-		for _, network := range container.NetworkSettings.Networks {
-			eip = network.IPAddress
+		for network_name, network := range container.NetworkSettings.Networks {
+			if network_name != "ingress" {
+				eip = network.IPAddress
+				if log.IsVerbose() {
+					log.Debugf("Container %s exposed IP is: \"%s\"", container.ID[:12], eip)
+				}
+			}
 		}
 	}
 
 	return ServicePort{
 		HostPort:          hp,
 		HostIP:            hip,
-		ExposedPort:       ep,
+		ExposedPort:       port.Port(),
 		ExposedIP:         eip,
-		PortType:          ept,
+		PortType:          port.Proto(),
 		ContainerID:       container.ID,
 		ContainerHostname: container.Config.Hostname,
 		container:         container,
@@ -184,4 +193,40 @@ func (f *ContainersFilters) WithContainerId(containerId string) ContainersFilter
 	filtersCopy["id"] = []string{containerId}
 
 	return filtersCopy
+}
+
+func EvaluateTemplateTags(s *string, container *dockerapi.Container) string {
+	if container == nil || s == nil || *s == "" {
+		return *s
+	}
+
+	tmpl := template.New("template-tags")
+	tmpl, err := tmpl.Parse(*s)
+
+	if err != nil {
+		log.Printf("template tags: Unable to parse %s template", s)
+		return *s
+	}
+
+	tmplVal := bytes.NewBufferString("")
+
+	if err = tmpl.Execute(tmplVal, container); err != nil {
+		log.Printf("template tags: Unable to evaluate %s template against container", s)
+		return *s
+	}
+
+	return tmplVal.String()
+}
+
+func SignalFromEvent(msg *dockerapi.APIEvents) syscall.Signal {
+	signal := syscall.Signal(-1)
+
+	if _, ok := msg.Actor.Attributes["signal"]; ok {
+		i, err := strconv.Atoi(msg.Actor.Attributes["signal"])
+		if err == nil {
+			signal = syscall.Signal(i)
+		}
+	}
+
+	return signal
 }

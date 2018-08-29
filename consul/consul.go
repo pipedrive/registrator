@@ -2,7 +2,7 @@ package consul
 
 import (
 	"fmt"
-	"log"
+	log "github.com/pipedrive/registrator/logger"
 	"net/url"
 	"strings"
 	"os"
@@ -84,6 +84,12 @@ func (r *ConsulAdapter) Register(service *bridge.Service) error {
 	registration.Tags = service.Tags
 	registration.Address = service.IP
 	registration.Check = r.buildCheck(service)
+	if log.IsVerbose() {
+		log.Debugf("Publishing service to Consul %+v", registration)
+		if registration.Check != nil {
+			log.Debugf("with check %+v", *registration.Check)
+		}
+	}
 	return r.client.Agent().ServiceRegister(registration)
 }
 
@@ -103,9 +109,9 @@ func (r *ConsulAdapter) buildCheck(service *bridge.Service) *consulapi.AgentServ
 			check.Timeout = timeout
 		}
 	} else if cmd := service.Attrs["check_cmd"]; cmd != "" {
-		check.Script = fmt.Sprintf("check-cmd %s %s %s", service.Origin.ContainerID[:12], service.Origin.ExposedPort, cmd)
+		check.Args = []string{"check-cmd", service.Origin.ContainerID[:12], service.Origin.ExposedPort, cmd}
 	} else if script := service.Attrs["check_script"]; script != "" {
-		check.Script = r.interpolateService(script, service)
+		check.Args = strings.Split(r.interpolateService(script, service), " ")
 	} else if ttl := service.Attrs["check_ttl"]; ttl != "" {
 		check.TTL = ttl
 	} else if tcp := service.Attrs["check_tcp"]; tcp != "" {
@@ -116,7 +122,7 @@ func (r *ConsulAdapter) buildCheck(service *bridge.Service) *consulapi.AgentServ
 	} else {
 		return nil
 	}
-	if check.Script != "" || check.HTTP != "" || check.TCP != "" {
+	if len(check.Args) > 0 || check.HTTP != "" || check.TCP != "" {
 		if interval := service.Attrs["check_interval"]; interval != "" {
 			check.Interval = interval
 		} else {

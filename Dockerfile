@@ -1,4 +1,4 @@
-FROM alpine:3.7
+FROM alpine:3.8
 ENTRYPOINT ["/bin/registrator"]
 
 COPY . /go/src/github.com/pipedrive/registrator

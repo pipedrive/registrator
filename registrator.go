@@ -4,7 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
+	log "github.com/pipedrive/registrator/logger"
 	"os"
 	"strings"
 	"time"
@@ -12,6 +12,7 @@ import (
 	dockerapi "github.com/fsouza/go-dockerclient"
 	"github.com/gliderlabs/pkg/usage"
 	"github.com/pipedrive/registrator/bridge"
+	"syscall"
 )
 
 var Version string
@@ -20,6 +21,7 @@ var versionChecker = usage.NewChecker("registrator", Version)
 
 var hostIp = flag.String("ip", "", "IP for ports mapped to the host")
 var internal = flag.Bool("internal", false, "Use internal ports instead of published ones")
+var verbose = flag.Bool("verbose", false, "Use verbose log level")
 var useIpFromLabel = flag.String("useIpFromLabel", "", "Use IP which is stored in a label assigned to the container")
 var refreshInterval = flag.Int("ttl-refresh", 0, "Frequency with which service TTLs are refreshed")
 var refreshTtl = flag.Int("ttl", 0, "TTL for services (default is no expiry)")
@@ -33,6 +35,7 @@ var sigtermBehaviour = flag.String("sigterm-behavior", "none", "Behavior when SI
 var ttlHealthCheckTTL = flag.Int("sigterm-health-check-ttl", 60, "TTL-type health-check TTL (in case sigterm-behavior set to \"register-health-check\").")
 var ttlHealthCheckStatus = flag.String("sigterm-health-check-status", "warning", "TTL-type health-check TTL (in case sigterm-behavior set to \"register-health-check\").")
 var containersFilters = make(bridge.ContainersFilters)
+var templateTags = flag.String("template-tags", "", "Patterned tags, coma separated. example: \"smth-{{.Config.etc}},what-{{.Config.another}}\" where pattern is standard go templates and root element is container as described in github.com/fsouza/go-dockerclient")
 
 func init() {
 	flag.Var(&containersFilters, "filter-containers", "Filter container to register. Based on docker-api filters (as in API /containers/json)")
@@ -65,6 +68,10 @@ func main() {
 	}
 
 	flag.Parse()
+	log.SetVerbose(*verbose)
+	if log.IsVerbose() {
+		log.Debugf("Using advanced debug (verbose) %t", *verbose)
+	}
 
 	if flag.NArg() != 1 {
 		if flag.NArg() == 0 {
@@ -113,15 +120,16 @@ func main() {
 	}
 
 	b, err := bridge.New(docker, flag.Arg(0), bridge.Config{
-		HostIp:          *hostIp,
-		Internal:        *internal,
-		UseIpFromLabel:  *useIpFromLabel,
-		ForceTags:       *forceTags,
-		RefreshTtl:      *refreshTtl,
-		RefreshInterval: *refreshInterval,
-		DeregisterCheck: *deregister,
-		Cleanup:         *cleanup,
+		HostIp:            *hostIp,
+		Internal:          *internal,
+		UseIpFromLabel:    *useIpFromLabel,
+		ForceTags:         *forceTags,
+		RefreshTtl:        *refreshTtl,
+		RefreshInterval:   *refreshInterval,
+		DeregisterCheck:   *deregister,
+		Cleanup:           *cleanup,
 		ContainersFilters: containersFilters,
+		TemplateTags:      *templateTags,
 	})
 
 	assert(err)
@@ -186,11 +194,20 @@ func main() {
 
 	// Process Docker events
 	for msg := range events {
+		signal := bridge.SignalFromEvent(msg)
+		if log.IsVerbose() {
+			log.Debugf("Got status update \"%s\" for %s. Signal: %d (%s): %+v", msg.Status, msg.ID[:12], signal, signal.String(), msg)
+		}
 		switch msg.Status {
 		case "start":
 			go b.Add(msg.ID)
 		case "kill":
-			go b.SetupSigtermBehavior(*sigtermBehaviour, msg, *ttlHealthCheckTTL, *ttlHealthCheckStatus)
+			switch signal {
+			case syscall.SIGTERM:
+				go b.SetupSigtermBehavior(*sigtermBehaviour, msg, *ttlHealthCheckTTL, *ttlHealthCheckStatus)
+			case syscall.SIGKILL:
+				go b.RemoveOnExit(msg.ID)
+			}
 		case "die":
 			go b.RemoveOnExit(msg.ID)
 		}

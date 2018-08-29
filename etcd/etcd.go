@@ -2,7 +2,7 @@ package etcd
 
 import (
 	"io/ioutil"
-	"log"
+	log "github.com/pipedrive/registrator/logger"
 	"net"
 	"net/http"
 	"net/url"

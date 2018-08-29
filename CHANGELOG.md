@@ -10,6 +10,29 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+## [v7.7] - 2018-05-15
+### Fixed
+
+### Added
+
+### Removed
+
+### Changed
+Ingress networks are not taken into account during when calculating exposed IP address for service
+
+## [v7.6] - 2018-05-15
+### Fixed
+
+### Added
+
+#### Containers Filters
+It's possible from now to filter containers being registered using `-filter-containers` which supports
+default docker filtering syntax
+
+### Removed
+
+### Changed
+
 ## [v7.5] - 2017-03-31
 ### Fixed
 
@@ -102,7 +125,9 @@ Now its possible to set behavior once container receives SIGTERM by using `sigte
 - Dropped Godeps for now
 
 
-[unreleased]: https://github.com/gliderlabs/registrator/compare/v7...HEAD
+[unreleased]: https://github.com/gliderlabs/registrator/compare/v7.7...HEAD
+[v7.7]: https://github.com/gliderlabs/registrator/compare/v7.6...v7.7
+[v7.6]: https://github.com/gliderlabs/registrator/compare/v7.5...v7.6
 [v7.5]: https://github.com/gliderlabs/registrator/compare/v7...v7.5
 [v7]: https://github.com/gliderlabs/registrator/compare/v6...v7
 [v6]: https://github.com/gliderlabs/registrator/compare/v5...v6
