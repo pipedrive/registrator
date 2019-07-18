@@ -10,6 +10,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+## [v7.5.1] - 2019-07-18
+### Fixed
+Brought dependencies to their latest versions
+
 ## [v7.5] - 2017-03-31
 ### Fixed
 
@@ -103,6 +107,7 @@ Now its possible to set behavior once container receives SIGTERM by using `sigte
 
 
 [unreleased]: https://github.com/gliderlabs/registrator/compare/v7...HEAD
+[v7.5.1]: https://github.com/pipedrive/registrator/compare/v7.5...v7.5.1
 [v7.5]: https://github.com/gliderlabs/registrator/compare/v7...v7.5
 [v7]: https://github.com/gliderlabs/registrator/compare/v6...v7
 [v6]: https://github.com/gliderlabs/registrator/compare/v5...v6
